@@ -14,7 +14,7 @@ import { writeFileSync } from "node:fs";
 import path from "node:path";
 
 const root = process.cwd();
-const out = path.resolve(process.env.MAKEFUN_OUTPUT || "output");
+const out = path.resolve(process.env.MAKEFUN_OUTPUT_DIR ?? "/output");
 
 await mkdir(out, { recursive: true });
 await cp(path.join(root, "game"), path.join(out, "game"), { recursive: true });
