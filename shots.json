@@ -1,1 +1,1 @@
-[{"name":"1-title.jpg","query":"?shot=title&seed=1"},{"name":"2-play.jpg","query":"?shot=play&seed=1"},{"name":"3-trap.jpg","query":"?shot=trap&seed=1"},{"name":"4-win.jpg","query":"?shot=win&seed=1"}]
+{"shots":[{"file":"1-title.jpg","name":"title"},{"file":"2-play.jpg","name":"play"},{"file":"3-trap.jpg","name":"trap"},{"file":"4-win.jpg","name":"win"}]}

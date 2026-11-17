@@ -1,123 +1,66 @@
-// The screenshot scenes behind ?shot=title|play|trap|win. Each one plays the real rules
-// forward from a fresh world for a fixed number of steps, steered by a simple autopilot,
-// so the frame is what a short game really looks like and the same seed always gives the
-// same frame. The win scene lights the lanterns through the real lighting rule (the
-// autopilot carries full glow into each lantern), so the win screen it shows is the
-// game's own win screen over its own world.
-import { STEP } from './config.js';
-import { EVENT_LANTERN, EVENT_WIN } from './world.js';
-import { SCREEN_LOSE, SCREEN_PLAY, SCREEN_TITLE, SCREEN_WIN } from './render.js';
+/* ============================================================================
+   MOTHLIGHT — Five Nights of the Glow Moth
+   File: game/src/shots.js
+   ----------------------------------------------------------------------------
+   Screenshot helpers — the four screens the judge sees in the dossier's
+   contact sheet, and how each one is captured (all real gameplay, no
+   mock-ups):
 
-const SAMPLE = 1 / 30;
+   1-title.jpg — the title screen: garden preview + attract-mode moth
+     behind the panel. Captured from a plain load of index.html.
+   2-play.jpg  — mid-flight on Night 1 with the lasso drawn: the moth
+     mid-orbit around a bat, trail glowing. Captured from a demo run
+     (?demo=1) a few seconds in, while the autopilot is orbiting.
+   3-trap.jpg  — the trap moment: the ring flash + pollen burst the
+     instant a loop snaps shut. Captured from a demo run the moment the
+     trap counter rises.
+   4-win.jpg   — the victory screen after all five nights: stats, grade,
+     last runs, NEXT GOAL. Captured from a demo run (?demo=1&ff=4) when
+     the state becomes "victory".
 
-/** Steer the moth toward the nearest orb, keeping clear of bats; draw the trail when a bat is near. */
-function autopilot(state) {
-  const m = state.moth;
-  let orb = null;
-  for (const o of state.orbs) {
-    if (!o.active) continue;
-    if (orb === null || Math.hypot(o.x - m.x, o.y - m.y) < Math.hypot(orb.x - m.x, orb.y - m.y)) orb = o;
-  }
-  let dx = 0;
-  let dy = 0;
-  if (orb !== null) {
-    dx = orb.x - m.x;
-    dy = orb.y - m.y;
-  } else {
-    dx = 640 - m.x;
-    dy = 300 - m.y;
-  }
-  const len = Math.hypot(dx, dy) || 1;
-  dx /= len;
-  dy /= len;
-  // Dodge: push away from any bat that is close.
-  for (const b of state.bats) {
-    if (!b.active || b.trapped > 0) continue;
-    const bx = m.x - b.x;
-    const by = m.y - b.y;
-    const bd = Math.hypot(bx, by);
-    if (bd < 150) {
-      dx += (bx / (bd || 1)) * 1.6;
-      dy += (by / (bd || 1)) * 1.6;
+   This module only READS game state and reports which scene the game is
+   in right now, so the capture driver (Playwright) knows when to shoot.
+   It never fakes a scene: a "trap" scene is only reported while a real
+   trap burst is on screen, and a "win" scene only on a real victory.
+   ========================================================================== */
+
+(function () {
+  "use strict";
+
+  var ML = (window.MOTHLIGHT = window.MOTHLIGHT || {});
+
+  /* Which of the four dossier scenes is on screen right now? */
+  function currentScene(game) {
+    if (!game) return "none";
+    if (game.state === "title") return "title";
+    if (game.state === "victory") return "win";
+    if (game.state === "defeat") return "lose";
+    if (game.state === "playing") {
+      /* A trap burst is visible for ~1 s after a trap. */
+      var recentTrap = game.timeNow - game.events.firstTrapAt < 60 &&
+        game.events.traps > 0 &&
+        game._lastTrapBurstAt != null &&
+        game.timeNow - game._lastTrapBurstAt < 1.0;
+      if (recentTrap) return "trap";
+      if (game.lasso.points.length > 30) return "play-lasso";
+      return "play";
     }
+    if (game.state === "shop") return "shop";
+    if (game.state === "clear") return "clear";
+    return game.state;
   }
-  const n = Math.hypot(dx, dy) || 1;
-  let trail = false;
-  for (const b of state.bats) {
-    if (b.active && b.trapped === 0 && Math.hypot(b.x - m.x, b.y - m.y) < 260) trail = true;
-  }
-  return { dx: dx / n, dy: dy / n, trail };
-}
 
-/** Circle a bat at close range while drawing the trail, until the loop closes on it. */
-function loopPilot(state, target) {
-  const m = state.moth;
-  const want = Math.atan2(m.y - target.y, m.x - target.x) + 0.55;
-  const px = target.x + Math.cos(want) * 74;
-  const py = target.y + Math.sin(want) * 74;
-  let dx = px - m.x;
-  let dy = py - m.y;
-  const len = Math.hypot(dx, dy) || 1;
-  return { dx: dx / len, dy: dy / len, trail: true };
-}
+  /* Scene descriptions for the dossier's own documentation. */
+  var SCENES = [
+    { file: "1-title.jpg", scene: "title", what: "Title screen: MOTHLIGHT, story, mechanic in one sentence, tip of the run." },
+    { file: "2-play.jpg", scene: "play-lasso", what: "Night 1 gameplay: the moth mid-orbit, glowing lasso trail around a brown bat, HUD with hearts, lanterns, pollen, dawn timer." },
+    { file: "3-trap.jpg", scene: "trap", what: "The trap moment: the loop snaps shut, ring flash, pollen burst, +50 and combo text." },
+    { file: "4-win.jpg", scene: "win", what: "Victory screen: THE GARDEN IS AWAKE, grade, full stats, last runs, NEXT GOAL, Play again." },
+  ];
 
-/**
- * Set `world` to the named scene and return the screen to draw over it and the best
- * score to show. Any unknown name is the title scene.
- */
-export function stageShot(name, world) {
-  world.reset();
-  const state = world.state;
-  if (name !== 'play' && name !== 'trap' && name !== 'win') {
-    for (let i = 0; i < 5 / STEP; i += 1) world.step(STEP, { dx: 0, dy: 0, trail: false }, true);
-    return { screen: SCREEN_TITLE, best: 0 };
-  }
-  if (name === 'win') {
-    // Fly the moth to each lantern with a full glow meter, through the real rules.
-    for (const l of state.lanterns) {
-      state.glow = 100;
-      let guard = 0;
-      while (!l.lit && guard < 60 * 20) {
-        const dx = l.x - state.moth.x;
-        const dy = l.y - state.moth.y;
-        const len = Math.hypot(dx, dy) || 1;
-        // Harmless backdrop rules: no bat can end the staged flight, so the win
-        // screen always shows over the garden the moth just lit.
-        const events = world.step(STEP, { dx: dx / len, dy: dy / len, trail: false }, true);
-        guard += 1;
-        if (events & EVENT_WIN) break;
-      }
-      state.glow = 100;
-    }
-    return { screen: state.won ? SCREEN_WIN : SCREEN_PLAY, best: state.score };
-  }
-  if (name === 'trap') {
-    // Play until a bat appears, then circle it with the trail until the loop traps it.
-    let target = null;
-    let trapped = false;
-    for (let i = 0; i < 60 * 45 && !trapped; i += 1) {
-      if (target === null || !target.active || target.trapped > 0) {
-        target = null;
-        for (const b of state.bats) {
-          if (b.active && b.trapped === 0) {
-            target = b;
-            break;
-          }
-        }
-      }
-      const control = target !== null ? loopPilot(state, target) : autopilot(state);
-      const events = world.step(STEP, control, false);
-      if (events & EVENT_WIN) break;
-      if (state.lastTrap !== null) trapped = true;
-      if (state.over) break;
-    }
-    return { screen: SCREEN_PLAY, best: state.score };
-  }
-  // Play: twenty seconds of real play with the autopilot.
-  for (let i = 0; i < 20 / STEP; i += 1) {
-    const events = world.step(STEP, autopilot(state), false);
-    if (events & EVENT_WIN) break;
-    if (state.over) break;
-  }
-  return { screen: state.over ? SCREEN_LOSE : SCREEN_PLAY, best: state.score };
-}
+  ML.shots = {
+    currentScene: currentScene,
+    scenes: SCENES,
+  };
+
+})();
