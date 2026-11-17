@@ -11,9 +11,10 @@
 import { buildDossier } from "./vendor/makefun-game.ts";
 import { cp, mkdir } from "node:fs/promises";
 import { writeFileSync } from "node:fs";
+import { fileURLToPath } from "node:url";
 import path from "node:path";
 
-const root = process.cwd();
+const root = fileURLToPath(new URL('.', import.meta.url));
 const out = path.resolve(process.env.MAKEFUN_OUTPUT_DIR ?? "/output");
 
 await mkdir(out, { recursive: true });
