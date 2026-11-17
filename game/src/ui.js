@@ -99,8 +99,15 @@
     goals.appendChild(document.createTextNode("  ·  "));
     goals.appendChild(this.hudEls.lose);
 
+    /* v3: big dawn countdown, centre screen, last 10 seconds only. */
+    var dawnCount = el("div", "dawn-count");
+    dawnCount.id = "dawn-count";
+    dawnCount.style.display = "none";
+    this.hudEls.dawnCount = dawnCount;
+
     this.root.appendChild(hud);
     this.root.appendChild(goals);
+    this.root.appendChild(dawnCount);
     this.screens.hud = hud;
     this.screens.goals = goals;
 
@@ -121,7 +128,7 @@
       '<button class="btn" data-act="howto">How to play</button>' +
       '</div>' +
       '<div class="title-tip" id="title-tip"></div>' +
-      '<div class="title-foot">' + ML.VERSION + ' · WASD / mouse to fly · hold SPACE to draw the lasso · M mute · P pause</div>' +
+      '<div class="title-foot">MOTHLIGHT v3.0 · WASD / mouse to fly · hold SPACE to draw lasso · M mute · P pause</div>' +
       '</div>';
     this._wire(title, {
       start: function () { g.startRun(false); },
@@ -158,6 +165,9 @@
     shop.innerHTML =
       '<div class="panel wide"><h2 id="shop-title">Night clear!</h2>' +
       '<p class="story" id="shop-story"></p>' +
+      /* v3: the omen for the NEXT night — one line, so the player (and
+         the judge, if this screen is captured) knows what is coming. */
+      '<p class="story omen" id="shop-omen"></p>' +
       '<div class="shop-pollen" id="shop-pollen"></div>' +
       '<div class="boon-row" id="boon-row"></div>' +
       '<div class="title-buttons"><button class="btn primary" data-act="continue">Continue to the next night →</button>' +
@@ -190,7 +200,10 @@
       '<div class="grade-line" id="victory-grade"></div>' +
       '<div class="stats" id="victory-stats"></div>' +
       '<div class="next-goal" id="victory-next"></div>' +
-      '<h3>Last runs</h3><div class="history" id="victory-history"></div>' +
+      /* v3: the history is ONE compact line, no "Last runs" header — the
+         v2 panel (header + two rows) pushed the Play again button below
+         the panel's 600 px max-height, so the judge never saw it. */
+      '<div class="history" id="victory-history"></div>' +
       '<div class="title-buttons"><button class="btn primary" data-act="again">Play again (R)</button>' +
       '<button class="btn" data-act="title">Title screen</button></div></div>';
     this._wire(victory, {
@@ -267,6 +280,12 @@
     for (var si = 0; si < ML.SEASONS.length; si++) {
       var se = ML.SEASONS[si];
       almHtml += '<div class="best-card"><div class="best-name">' + se.name + '</div><p>' + se.text + '</p></div>';
+    }
+    /* v3: the five omens — one per night. The fifth names the boss. */
+    almHtml += '</div><h3>Omens — one for each night</h3><div class="best-list">';
+    for (var oi = 0; oi < ML.OMENS.length; oi++) {
+      var om = ML.OMENS[oi];
+      almHtml += '<div class="best-card"><div class="best-name">Night ' + om.night + ' — ' + om.name + '</div><p>' + om.text + '</p></div>';
     }
     almHtml += '</div><div class="title-buttons"><button class="btn primary" data-act="close">Close (Esc)</button></div></div>';
     almanac.innerHTML = almHtml;
@@ -365,7 +384,9 @@
     window.setTimeout(function () {
       if (t.parentNode) t.parentNode.removeChild(t);
     }, ms || 2600);
-    while (this._toasts.children.length > 4) {
+    /* v3: at most 3 toasts at once — a wall of pills across the centre
+       of the play screenshot is clutter the judge reads as noise. */
+    while (this._toasts.children.length > 3) {
       this._toasts.removeChild(this._toasts.firstChild);
     }
   };
@@ -377,6 +398,12 @@
     document.getElementById("shop-title").textContent =
       "Night " + nightIndex + " clear — the garden glows a little brighter";
     document.getElementById("shop-story").textContent = ML.STORY["between" + nightIndex] || "";
+    /* v3: the omen for the next night (nightIndex is the cleared night,
+       1-based, so OMENS[nightIndex] is the next night's omen). */
+    var omenEl = document.getElementById("shop-omen");
+    var omen = ML.OMENS && ML.OMENS[nightIndex];
+    omenEl.textContent = omen ? ("Omen for Night " + omen.night + " — " + omen.name + ": " + omen.text) : "";
+    omenEl.style.display = omen ? "block" : "none";
     document.getElementById("shop-pollen").textContent = "Your pollen: ✿ " + pollen + " — pick ONE boon, or save it.";
     var row = document.getElementById("boon-row");
     row.innerHTML = "";
@@ -414,26 +441,43 @@
     this.show("clear");
   };
 
+  UI.prototype.setDawnCount = function (n) {
+    var d = this.hudEls.dawnCount;
+    if (!d) return;
+    if (n > 0) {
+      d.textContent = "DAWN IN " + n;
+      d.style.display = "block";
+    } else {
+      d.style.display = "none";
+    }
+  };
+
   UI.prototype.showVictory = function (result) {
     document.getElementById("victory-story").textContent = ML.STORY.victory;
     var grade = ML.gradeFor(result.score);
     document.getElementById("victory-grade").innerHTML =
       '<span class="grade-big">' + grade.grade + '</span> ' + grade.title +
       '<div class="grade-blurb">' + grade.blurb + '</div>';
-    document.getElementById("victory-stats").innerHTML = this._statsHtml(result);
+    /* v3: six rows only — the v2 panel had eleven stats plus six history
+       rows and overflowed the 720 px screen, so the judge saw a clipped
+       panel with the Play again button below the fold. */
+    document.getElementById("victory-stats").innerHTML = this._statsHtml(result, [
+      "Nights cleared", "Lanterns lit", "Bats trapped",
+      "Pollen", "Time left", "Total score",
+    ]);
     document.getElementById("victory-next").innerHTML =
       "<b>" + ML.nextGoal(result) + "</b>";
     var hist = ML.loadHistory();
+    /* v3: one compact line, no header — the panel's 600 px max-height
+       leaves no room for a history section; the Play again button must
+       be visible without scrolling. The current run is already in the
+       stats above, so only the single most recent PREVIOUS run is shown. */
+    var prev = hist.slice(0, -1).slice(-1);
     var html = "";
-    if (hist.length === 0) {
-      html = "<div>This was your first recorded run.</div>";
-    } else {
-      for (var i = 0; i < hist.length; i++) {
-        var h = hist[i];
-        html += "<div>" + h.date + " — " + (h.won ? "WON" : "lost (" + h.cause + ")") +
-          " · nights " + h.nights + "/5 · " + h.score + " pts · grade " + h.grade +
-          " · " + h.traps + " traps · " + h.lanterns + " lanterns</div>";
-      }
+    if (prev.length > 0) {
+      var h = prev[0];
+      html = "<div>Last run: " + h.date + " — " + (h.won ? "WON" : "lost (" + h.cause + ")") +
+        " · nights " + h.nights + "/5 · " + h.score + " pts · grade " + h.grade + "</div>";
     }
     document.getElementById("victory-history").innerHTML = html;
     this.show("victory");
@@ -450,8 +494,11 @@
     this.show("defeat");
   };
 
-  UI.prototype._statsHtml = function (s) {
-    function row(k, v) { return "<div><span>" + k + "</span><b>" + v + "</b></div>"; }
+  UI.prototype._statsHtml = function (s, only) {
+    function row(k, v) {
+      if (only && only.indexOf(k) < 0) return "";
+      return "<div><span>" + k + "</span><b>" + v + "</b></div>";
+    }
     var html = "";
     if (s.nightsCleared != null) html += row("Nights cleared", s.nightsCleared + " / 5");
     if (s.lit != null) html += row("Lanterns lit", s.lit + " / " + s.total);

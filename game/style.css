@@ -119,6 +119,20 @@ html, body {
 .goal-win { color: #ffe9a3; font-weight: 600; }
 .goal-lose { color: #ffb0a0; }
 
+/* v3: big dawn countdown, centre screen, last 10 seconds only. */
+.dawn-count {
+  position: absolute;
+  top: 104px; left: 0; right: 0;
+  text-align: center;
+  font-family: "Segoe UI", system-ui, sans-serif;
+  font-size: 34px;
+  font-weight: 800;
+  letter-spacing: 2px;
+  color: #ff8a5a;
+  text-shadow: 0 0 18px rgba(255, 120, 60, 0.7), 0 2px 4px rgba(0, 0, 0, 0.9);
+  pointer-events: none;
+}
+
 @keyframes pulse {
   0%, 100% { opacity: 1; }
   50% { opacity: 0.45; }
@@ -171,6 +185,9 @@ html, body {
 .win-title { text-align: center; letter-spacing: 2px; }
 
 .story { font-size: 17px; line-height: 1.55; color: #efe6d0; margin-bottom: 12px; }
+/* v3: the omen line on the shop screen — gold italic, so the prophecy
+   for the next night reads as a prophecy, not a paragraph. */
+.story.omen { font-style: italic; color: #ffd76a; }
 .mechanic {
   text-align: center;
   font-size: 19px;
@@ -322,15 +339,15 @@ html, body {
   color: #ffd76a;
 }
 
-/* Toasts. */
+/* Toasts — v3: bottom-left, not centre, so the pond and the lanterns
+   stay clear in the play screenshot. */
 .toasts {
   position: absolute;
-  left: 50%;
-  bottom: 92px;
-  transform: translateX(-50%);
+  left: 24px;
+  bottom: 110px;
   display: flex;
   flex-direction: column;
-  align-items: center;
+  align-items: flex-start;
   gap: 6px;
   pointer-events: none;
 }

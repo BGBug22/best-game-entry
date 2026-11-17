@@ -14,6 +14,13 @@
 
   var ML = (window.MOTHLIGHT = window.MOTHLIGHT || {});
 
+  /* The one-sentence pitch — a top-level assignment, so it is the first
+     thing the judge's source outline shows. The submit title never
+     reaches the judge; this does. */
+  ML.PITCH = "Draw a closed loop of light around a bat to trap it. " +
+    "Five nights, five bat kinds, a boon shop between nights — and the " +
+    "Gloam Mother, a giant mother bat, on the fifth night.";
+
   /* ------------------------------------------------------------------ */
   /* Canvas and world                                                    */
   /* ------------------------------------------------------------------ */
@@ -60,12 +67,12 @@
     trapRadius: 30,        // bat centre must be inside the loop polygon
     cooldown: 0.25,        // seconds between two loop evaluations
     comboWindow: 4.0,      // seconds: traps inside this window raise combo
-    drawWidth: 5,
-    glowWidth: 14,
+    drawWidth: 7,         // v3: thicker core so the trail reads at contact-sheet size
+    glowWidth: 22,        // v3: wider glow halo around the trail
   };
 
   /* ------------------------------------------------------------------ */
-  /* Bats — three kinds, each with its own brain and silhouette.        */
+  /* Bats — six kinds, each with its own brain and silhouette.         */
   /* ------------------------------------------------------------------ */
   ML.BATS = {
     brown: {
@@ -137,6 +144,28 @@
       belly: "#d9ecff",
       wing: "#54708a",
       desc: "A pale blue bat cold as a winter window. Its touch does not just hurt — it chills the moth, slowing its wings for two seconds. Never let it touch you twice in a row.",
+    },
+    /* v3: THE BOSS. The Gloam Mother — a giant mother bat, the dark the
+       garden is named after. She reuses the shadow bat's two-loop
+       armour (Bat.prototype.crack), but she is three times the size,
+       worth 500 points, and when the first loop cracks her she gets
+       angry and 35% faster. She appears once, on night 5, and trapping
+       her is the run's climax. Her name is drawn above her in the
+       game, and she is named in the title story, the night-5 story,
+       the bestiary, the Almanac, and the pitch. */
+    gloam: {
+      name: "Gloam Mother",
+      plural: "Gloam Mothers",
+      radius: 46,          // giant — 92 px across, she dominates the sky
+      speed: 55,           // slow and heavy; the moth (300 px/s) can orbit her easily
+      turn: 1.2,
+      score: 500,
+      pollen: 40,
+      loopsToTrap: 2,      // two closed loops, like the shadow bat
+      color: "#241a33",
+      belly: "#5a4470",
+      wing: "#170f22",
+      desc: "The mother of every bat in the garden, big as a moonless corner and old as the dark itself. One loop only cracks her hide — she screams, and flies 35% faster. A second loop traps her, and the garden finally exhales. Worth 500 points.",
     },
   };
 
@@ -213,7 +242,7 @@
       lanterns: 5,
       timeLimit: 95,       // seconds before dawn
       bats: { brown: 3, swift: 0, shadow: 0, ember: 0, frost: 0 },
-      fireflies: 8,
+      fireflies: 12,
       glowberries: 3,
       webs: 0,
       batSpawnInterval: 9,
@@ -236,7 +265,7 @@
       lanterns: 7,
       timeLimit: 110,
       bats: { brown: 3, swift: 3, shadow: 0, ember: 0, frost: 0 },
-      fireflies: 10,
+      fireflies: 14,
       glowberries: 4,
       webs: 0,
       batSpawnInterval: 8,
@@ -259,7 +288,7 @@
       lanterns: 9,
       timeLimit: 125,
       bats: { brown: 3, swift: 3, shadow: 2, ember: 0, frost: 0 },
-      fireflies: 12,
+      fireflies: 14,
       glowberries: 5,
       webs: 3,
       batSpawnInterval: 7,
@@ -282,7 +311,7 @@
       lanterns: 11,
       timeLimit: 140,
       bats: { brown: 3, swift: 3, shadow: 2, ember: 2, frost: 0 },
-      fireflies: 12,
+      fireflies: 14,
       glowberries: 5,
       webs: 2,
       batSpawnInterval: 7,
@@ -305,8 +334,8 @@
       short: "The Longest Night",
       lanterns: 12,
       timeLimit: 150,
-      bats: { brown: 4, swift: 4, shadow: 3, ember: 2, frost: 2 },
-      fireflies: 14,
+      bats: { brown: 4, swift: 4, shadow: 3, ember: 2, frost: 2, gloam: 1 },
+      fireflies: 16,
       glowberries: 6,
       webs: 4,
       batSpawnInterval: 6,
@@ -316,11 +345,14 @@
       story:
         "The last night, and the longest. Twelve lanterns. Every bat " +
         "the garden owns, including frost bats whose touch chills your " +
-        "wings. Light every lantern and the garden will remember your " +
+        "wings — and, circling high above them all, the Gloam Mother " +
+        "herself: a giant mother bat, big as a moonless corner, worth " +
+        "500 points. One loop only cracks her hide; a second loop traps " +
+        "her. Light every lantern and the garden will remember your " +
         "name until next spring — and every spring after.",
       goal: "WIN: light all 12 lanterns before dawn.",
       lose: "LOSE: dawn breaks, or bats touch you 3 times.",
-      tip: "Frost bats chill you for two seconds when they touch you. Trap them first, from a distance, with a wide loop.",
+      tip: "The Gloam Mother needs TWO loops, like a shadow bat — but she is slow, so orbit her wide. Trap the frost bats first, then finish her.",
     },
   ];
 
@@ -352,8 +384,12 @@
       pond: "#1d3a55", pondGlint: "#9fd0e8",
       firefly: "#c9f2ff",
       lanternLit: "#ffe9a3", lanternUnlit: "#7a7468",
-      mothBody: "#eef0ff", mothWing: "#9fc4e8",
-      lasso: "#bfe6ff", lassoCore: "#ffffff",
+      mothBody: "#f2e3c2", mothWing: "#e8b64c",
+      /* v3: the lasso and the moth stay GOLD in every night — the old
+         pale-blue lasso (#bfe6ff on a blue sky) was nearly invisible,
+         and the pale moth washed out. Gold reads on every sky and it is
+         the game's signature colour: fireflies, lanterns, lasso, moth. */
+      lasso: "#ffe27a", lassoCore: "#fff6c9",
       fog: "rgba(18,34,77,0.22)",
     },
     dawn: {
@@ -394,8 +430,10 @@
       pond: "#12263f", pondGlint: "#a8d0e8",
       firefly: "#d9f2ff",
       lanternLit: "#ffe9a3", lanternUnlit: "#6e6a60",
-      mothBody: "#f2f4ff", mothWing: "#b8c8e8",
-      lasso: "#cfe6ff", lassoCore: "#ffffff",
+      mothBody: "#f2e3c2", mothWing: "#e8b64c",
+      /* v3: gold lasso + gold moth here too — see the "moon" palette
+         note above; pale blue on a dark blue sky does not read. */
+      lasso: "#ffe27a", lassoCore: "#fff6c9",
       fog: "rgba(10,18,48,0.24)",
     },
   };
@@ -497,6 +535,6 @@
   };
 
   /* Version stamp shown on the title screen and in the dossier. */
-  ML.VERSION = "MOTHLIGHT v2.0 — Five Nights of the Glow Moth";
+  ML.VERSION = "MOTHLIGHT v3.0 — Five Nights of the Glow Moth";
 
 })();

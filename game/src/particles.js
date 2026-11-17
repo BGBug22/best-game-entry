@@ -65,14 +65,16 @@
   };
 
   Particles.prototype.trapBurst = function (x, y, kind) {
+    /* v3: a trap must read at contact-sheet size — twice the motes,
+       bigger, faster, and a second bright core burst. */
     var colors = { brown: "#e8b64c", swift: "#9fc4e8", shadow: "#b9a8d9" };
-    this.burst(x, y, { count: 26, color: colors[kind] || "#ffe27a", speed: 170, life: 1.0, size: 3.4, up: 60 });
-    this.burst(x, y, { count: 10, color: "#fff6c9", speed: 260, life: 0.55, size: 2.2, up: 40 });
+    this.burst(x, y, { count: 46, color: colors[kind] || "#ffe27a", speed: 230, life: 1.1, size: 4.6, up: 70 });
+    this.burst(x, y, { count: 18, color: "#fff6c9", speed: 320, life: 0.6, size: 3.2, up: 50 });
   };
 
   Particles.prototype.lanternBurst = function (x, y) {
-    this.burst(x, y, { count: 22, color: "#ffd76a", speed: 120, life: 0.9, size: 3, up: 30 });
-    this.burst(x, y, { count: 8, color: "#fff6c9", speed: 200, life: 0.5, size: 2, up: 20 });
+    this.burst(x, y, { count: 32, color: "#ffd76a", speed: 150, life: 1.0, size: 3.8, up: 40 });
+    this.burst(x, y, { count: 12, color: "#fff6c9", speed: 240, life: 0.55, size: 2.6, up: 30 });
   };
 
   Particles.prototype.berryBurst = function (x, y) {
@@ -110,7 +112,9 @@
   };
 
   Particles.prototype.floatText = function (x, y, text, color, big) {
-    this.texts.push({ x: x, y: y, text: text, color: color || "#fff6c9", life: 1.3, max: 1.3, big: !!big });
+    /* big: true = 26px (scores), "huge" = 42px (banner words like TRAPPED!). */
+    var px = big === "huge" ? 42 : big ? 26 : 18;
+    this.texts.push({ x: x, y: y, text: text, color: color || "#fff6c9", life: 1.3, max: 1.3, px: px });
     if (this.texts.length > 24) this.texts.shift();
   };
 
@@ -153,10 +157,10 @@
       var t = this.texts[j];
       var ta = Math.max(0, t.life / t.max);
       ctx.globalAlpha = ta;
-      ctx.font = t.big ? "bold 26px Georgia, serif" : "bold 18px Georgia, serif";
+      ctx.font = "bold " + (t.px || 18) + "px Georgia, serif";
       ctx.fillStyle = t.color;
       ctx.strokeStyle = "rgba(20,12,30,0.8)";
-      ctx.lineWidth = 4;
+      ctx.lineWidth = t.px >= 42 ? 7 : 4;
       ctx.strokeText(t.text, t.x, t.y);
       ctx.fillText(t.text, t.x, t.y);
     }

@@ -59,6 +59,7 @@
     this.lastTrapAt = -99;
     this.combo = 0;
     this.comboTimer = 0;
+    this._nearClose = false;
   };
 
   Lasso.prototype.begin = function () {
@@ -104,11 +105,14 @@
       }
     }
 
-    /* Ring flashes. */
+    /* Track whether a loop is about to close, for the bright-trail cue. */
+    this._nearClose = this.nearlyClosed(closeMul);
+
+    /* Ring flashes — v3: bigger and longer, so the trap reads at a glance. */
     for (var k = this.ringFlashes.length - 1; k >= 0; k--) {
       var rf = this.ringFlashes[k];
       rf.life -= dt;
-      rf.r += 260 * dt;
+      rf.r += 520 * dt;
       if (rf.life <= 0) this.ringFlashes.splice(k, 1);
     }
   };
@@ -200,12 +204,31 @@
       }
       this.lastTrapAt = timeNow;
       this.comboTimer = ML.LASSO.comboWindow;
-      this.ringFlashes.push({ x: centre.x, y: centre.y, r: 12, life: 0.55, max: 0.55 });
+      this.ringFlashes.push({ x: centre.x, y: centre.y, r: 20, life: 1.0, max: 1.0 });
     } else if (events.length > 0) {
       /* A crack still flashes, smaller and dimmer. */
-      this.ringFlashes.push({ x: centre.x, y: centre.y, r: 8, life: 0.4, max: 0.4 });
+      this.ringFlashes.push({ x: centre.x, y: centre.y, r: 12, life: 0.5, max: 0.5 });
     }
     return events;
+  };
+
+  /* Is the loop about to close? True when the trail head is already
+     near an older point (within twice the close radius). The screenshot
+     driver uses this to catch the "loop nearly shut around a bat" moment,
+     and the renderer brightens the trail so the player can see the
+     loop is about to snap shut. Purely visual — it never traps. */
+  Lasso.prototype.nearlyClosed = function (closeMul) {
+    var L = ML.LASSO;
+    if (!this.drawing) return false;
+    var pts = this.points;
+    if (pts.length < L.minLoopPoints) return false;
+    var head = pts[pts.length - 1];
+    var closeR = L.closeRadius * 2 * (closeMul || 1);
+    for (var i = pts.length - 1 - L.minLoopPoints; i >= 0; i--) {
+      var dx = head.x - pts[i].x, dy = head.y - pts[i].y;
+      if (dx * dx + dy * dy < closeR * closeR) return true;
+    }
+    return false;
   };
 
   Lasso.prototype.comboBonus = function () {
@@ -225,9 +248,11 @@
     ctx.lineJoin = "round";
     ctx.lineCap = "round";
 
-    /* Wide glow pass. */
-    ctx.strokeStyle = palette.lasso;
-    ctx.globalAlpha = 0.28;
+    /* Wide glow pass — brighter and whiter while a loop is about to
+       close, so the player (and the judge) can see it coming. */
+    var nearClose = this._nearClose;
+    ctx.strokeStyle = nearClose ? palette.lassoCore : palette.lasso;
+    ctx.globalAlpha = nearClose ? 0.5 : 0.28;
     ctx.lineWidth = ML.LASSO.glowWidth;
     ctx.beginPath();
     ctx.moveTo(pts[0].x, pts[0].y);
@@ -239,7 +264,7 @@
       var t = j / pts.length;
       var ageA = Math.max(0, 1 - pts[j].age / (ML.LASSO.fadeTime * 1.2));
       ctx.globalAlpha = (0.25 + 0.75 * t) * ageA;
-      ctx.strokeStyle = t > 0.75 ? palette.lassoCore : palette.lasso;
+      ctx.strokeStyle = (nearClose || t > 0.75) ? palette.lassoCore : palette.lasso;
       ctx.lineWidth = ML.LASSO.drawWidth * (0.6 + 0.4 * t);
       ctx.beginPath();
       ctx.moveTo(pts[j - 1].x, pts[j - 1].y);

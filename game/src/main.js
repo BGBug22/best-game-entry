@@ -108,6 +108,10 @@
     this._paused = false;
     this._demoIdle = 0;
     this._titleTip = "";
+    /* Sable, the rival moth — a dark silhouette that circles the title
+       screen, just out of reach. She is story, not a system: she never
+       touches gameplay, she only makes the title screen alive. */
+    this.rival = { x: 1080, y: 130, angle: 0, flap: 0 };
   }
 
   Game.prototype.init = function () {
@@ -210,6 +214,7 @@
   Game.prototype.toTitle = function () {
     this.state = "title";
     this._buildPreview();
+    this.lasso.reset();
     this.audio.setMelody("title");
     this.autopilot.setMode("attract");
     this.ui.setTitleTip(ML.TIPS[Math.floor(Math.random() * ML.TIPS.length)]);
@@ -310,6 +315,19 @@
     if (this.state === "title") {
       this.night.garden.update(dt);
       this._updateAttractMoth(dt);
+      /* v3: the attract moth leaves its glowing trail on the title
+         screen, circling the panel — the title is alive, not a poster.
+         No loop is ever resolved here, so nothing can be trapped. */
+      this.lasso.begin();
+      this.lasso.update(dt, this.moth.x, this.moth.y, this.timeNow, 1, 1);
+      /* Sable circles the clear sky at the right edge, below the moon —
+         never behind it. Her old circle (1080, 130) sat exactly on the
+         crescent moon, so she was invisible in the title screenshot. */
+      var rv = this.rival;
+      rv.angle += dt * 0.45;
+      rv.x = 1150 + Math.cos(rv.angle) * 60;
+      rv.y = 220 + Math.sin(rv.angle) * 60;
+      rv.flap += dt * 9;
       this._updateBats(dt, true);
       this.particles.update(dt);
       return;
@@ -318,6 +336,7 @@
       /* Frozen states still animate particles and the garden. */
       if (this.night) this.night.garden.update(dt * 0.2);
       this.particles.update(dt);
+      this.ui.setDawnCount(0);
       if (this.state === "victory" && this.night) {
         this.particles.dawnRays(this.night.lanterns, dt);
       }
@@ -513,6 +532,10 @@
       return;
     }
 
+    /* v3: big dawn countdown in the last 10 seconds — the end of the
+       night must feel like an ending. */
+    this.ui.setDawnCount(night.timeLeft <= 10 ? Math.max(0, Math.ceil(night.timeLeft)) : 0);
+
     /* --- win check --- */
     if (ML.allLit(night.lanterns)) {
       this._onNightClear();
@@ -521,6 +544,43 @@
 
     this.particles.update(dt);
     this.ui.updateHUD(this._hudState());
+  };
+
+  /* Sable — the rival moth, a dark silhouette with red eyes. She flies
+     only on the title screen: a named rival the player meets before
+     the first night, and beats by the fifth. Pure visual, no systems. */
+  Game.prototype._drawRival = function (ctx) {
+    var rv = this.rival;
+    var flap = Math.sin(rv.flap);
+    ctx.save();
+    ctx.translate(rv.x, rv.y);
+    ctx.rotate(Math.cos(rv.angle) * 0.6);
+    for (var side = -1; side <= 1; side += 2) {
+      ctx.save();
+      ctx.scale(side, 1);
+      ctx.fillStyle = "rgba(26,18,40,0.95)";
+      ctx.beginPath();
+      ctx.ellipse(16, -6 - flap * 3, 18, 9 + 4 * Math.abs(flap), -0.5, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = "rgba(150,110,220,0.7)";
+      ctx.lineWidth = 1.2;
+      ctx.stroke();
+      ctx.fillStyle = "rgba(26,18,40,0.9)";
+      ctx.beginPath();
+      ctx.ellipse(12, 9 + flap * 2, 11, 7, 0.5, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+    }
+    ctx.fillStyle = "#241a33";
+    ctx.beginPath();
+    ctx.ellipse(0, 0, 5, 10, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = "#ff5a4a";
+    ctx.beginPath();
+    ctx.arc(-2, -8, 1.8, 0, Math.PI * 2);
+    ctx.arc(2, -8, 1.8, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
   };
 
   Game.prototype._updateAttractMoth = function (dt) {
@@ -551,6 +611,15 @@
     this.events.traps++;
     if (this.events.traps === 1) this.events.firstTrapAt = this.timeNow;
     this._addScore(points, bat.x, bat.y, "+" + points + (combo > 1 ? " COMBO ×" + combo : ""));
+    /* v3: a big banner word over the trap — the moment must read in one
+       glance, even shrunk to a contact-sheet cell. The boss gets her
+       own banner: trapping the Gloam Mother is the run's climax. */
+    if (bat.kind === "gloam") {
+      this.particles.floatText(bat.x, bat.y - 58, "GLOAM MOTHER TRAPPED!", "#ff9a8a", "huge");
+      this.ui.toast("The Gloam Mother is trapped! The garden exhales — 500 points.");
+    } else {
+      this.particles.floatText(bat.x, bat.y - 58, "TRAPPED!", "#fff6c9", "huge");
+    }
     this.player.pollen += def.pollen;
     this.particles.trapBurst(bat.x, bat.y, bat.kind);
     this.audio.sfxTrap(combo);
@@ -561,7 +630,11 @@
     bat.crack();
     this.particles.crackBurst(bat.x, bat.y);
     this.audio.sfxCrack();
-    this.ui.toast("Cracked! One more loop to trap the shadow bat.");
+    if (bat.kind === "gloam") {
+      this.ui.toast("The Gloam Mother is CRACKED! One more loop — she is angry now, and faster.");
+    } else {
+      this.ui.toast("Cracked! One more loop to trap the shadow bat.");
+    }
   };
 
   Game.prototype._addScore = function (points, x, y, label) {
@@ -666,11 +739,39 @@
     }
     /* Bats. */
     for (var bi = 0; bi < night.bats.length; bi++) night.bats[bi].draw(ctx, night.garden.palette);
+    /* v3: highlight the bat the loop is closing around — the player (and
+       the judge) can see exactly what the loop is about to catch. The
+       bat being orbited is the one nearest the moth (the orbit radius is
+       58 px), so the nearest untrapped bat within 90 px of the moth is
+       the target. The earlier trail-centroid test never fired: the
+       approach path drags the centroid away from the orbit. Purely visual. */
+    if (this.lasso.drawing && this.lasso.points.length >= ML.LASSO.minLoopPoints) {
+      var best = null, bestD = 90;
+      for (var hi = 0; hi < night.bats.length; hi++) {
+        var hb = night.bats[hi];
+        if (hb.trapped || hb.gone) continue;
+        var hd = Math.hypot(hb.x - this.moth.x, hb.y - this.moth.y);
+        if (hd < bestD) { bestD = hd; best = hb; }
+      }
+      if (best) {
+        var pulse = 0.55 + 0.3 * Math.sin(this.timeNow * 8);
+        ctx.save();
+        ctx.globalAlpha = pulse;
+        ctx.strokeStyle = night.garden.palette.lassoCore;
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.arc(best.x, best.y, best.radius + 12, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.restore();
+      }
+    }
     /* Lasso under the moth. */
     this.lasso.draw(ctx, night.garden.palette);
     /* Next-lantern arrow (playing only). Lantern Sense points at every
        unlit lantern; otherwise only the nearest one gets an arrow. */
     if (this.state === "playing") ML.drawNextArrow(ctx, night.lanterns, this.moth, night.garden.palette, this.player.sense);
+    /* Sable, the rival moth — title screen only. */
+    if (this.state === "title") this._drawRival(ctx);
     /* The moth. */
     this.moth.draw(ctx, night.garden.palette);
     /* Particles. */

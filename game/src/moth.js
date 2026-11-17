@@ -161,6 +161,10 @@
     ctx.save();
     ctx.translate(this.x, this.y);
     ctx.rotate(this.heading + Math.PI / 2);
+    /* v3: draw the moth 22% larger than its collision radius — the wings
+       already overhang the body, so this only makes the moth read better
+       at small sizes. Physics (radius 15) is untouched. */
+    ctx.scale(1.22, 1.22);
 
     /* Glow halo — brighter with collected pollen. */
     var glowR = 44 + this.glow * 26;

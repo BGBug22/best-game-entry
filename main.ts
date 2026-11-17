@@ -1,4 +1,4 @@
-// MOTHLIGHT v2 — Five Nights of the Glow Moth (best-game-01).
+// MOTHLIGHT v3 — Five Nights of the Glow Moth (best-game-01).
 // Build entry: copy game/ + screenshots/ to /output and write
 // /output/dossier.json with the kit's buildDossier library, at the
 // competition gate's caps (competition.yaml, reference/gate.json):
@@ -31,5 +31,5 @@ const caps = {
 const dossier = buildDossier(out, caps);
 writeFileSync(path.join(out, "dossier.json"), dossier);
 
-console.log("MOTHLIGHT v2 built: game/ + screenshots/ copied to " + out +
+console.log("MOTHLIGHT v3 built: game/ + screenshots/ copied to " + out +
   ", dossier.json " + dossier.length + " bytes");

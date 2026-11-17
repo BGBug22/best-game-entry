@@ -92,10 +92,14 @@
     this.replan -= dt;
 
     if (this.mode === "attract") {
-      /* Lazy figure-eights around the garden, never trapping. */
-      var t = game.timeNow * 0.35;
-      this.target.x = 640 + Math.sin(t) * 420;
-      this.target.y = 340 + Math.sin(t * 2.3) * 180;
+      /* v3: a wide ellipse that hugs the panel's edges — the title
+         panel is 780 px wide and mostly opaque, so a moth flying
+         figure-eights in the middle is invisible behind it. On this
+         circuit the moth is visible along the left, right, top and
+         bottom edges, trailing light around the panel. */
+      var t = game.timeNow * 0.3;
+      this.target.x = 640 + Math.cos(t) * 580;
+      this.target.y = 360 + Math.sin(t) * 270;
       this.lasso = false;
       return { target: this.target, lasso: false };
     }
@@ -103,6 +107,16 @@
     /* ---- DEMO: full play. ---- */
     var D = ML.DEMO;
     var lantern = ML.nearestUnlit(night.lanterns, moth.x, moth.y);
+
+    /* v3: dawn urgency — the time needed to light the remaining lanterns
+       (about 4 s per lantern at 300 px/s, plus a 6 s margin for the
+       farthest flight). When the clock is inside that budget the
+       autopilot stops trapping bats and lights lanterns only. The v3
+       loss on night 3 was an orbit started with 1 lantern left and
+       ~2 s on the clock; the night is won by lanterns, not by traps. */
+    var unlitN = 0;
+    for (var u = 0; u < night.lanterns.length; u++) if (!night.lanterns[u].lit) unlitN++;
+    var dawnUrgent = unlitN > 0 && night.timeLeft < 4 * unlitN + 6;
 
     /* A bat that must be dodged right now? */
     var danger = nearestBat(night.bats, moth.x, moth.y, D.dangerRadius);
@@ -127,19 +141,27 @@
     /* Keep orbiting the same bat until it is trapped or gone — but
        never forever: if a loop has not closed in 6 seconds, abandon
        this bat and go light a lantern instead. A stuck autopilot is
-       a lost night. */
+       a lost night. Dawn urgency (above) abandons the orbit sooner:
+       lanterns first when the clock is tight. */
     if (this.state === "orbit" && this.targetBat) {
       var bat = this.targetBat;
       this.orbitTime += dt;
-      if (bat.trapped || bat.gone || this.orbitTime > 6) {
+      if (bat.trapped || bat.gone || this.orbitTime > 6 || dawnUrgent) {
         this.targetBat = null;
         this.state = "seek";
         this.orbitTime = 0;
       } else {
+        /* v3: the orbit radius adapts to the bat — a normal bat is
+           orbited at 58 px, but the Gloam Mother (radius 46) would
+           TOUCH the moth at 58 px (collision is moth.radius +
+           bat.radius − 2 = 59). Orbit her at radius + 30 instead, so
+           the moth stays 17 px clear. The loop is bigger but still
+           closes inside the 2.2 s trail life (76 px radius ≈ 1.5 s). */
+        var orbitR = Math.max(58, bat.radius + 30);
         var centre = predicted(bat, 0.45);
-        this.orbitAngle += (D.orbitSpeed / 58) * dt * this.orbitDir;
-        this.target.x = centre.x + Math.cos(this.orbitAngle) * 58;
-        this.target.y = centre.y + Math.sin(this.orbitAngle) * 58;
+        this.orbitAngle += (D.orbitSpeed / orbitR) * dt * this.orbitDir;
+        this.target.x = centre.x + Math.cos(this.orbitAngle) * orbitR;
+        this.target.y = centre.y + Math.sin(this.orbitAngle) * orbitR;
         this.target.x = ML.clamp(this.target.x, 40, ML.WORLD.width - 40);
         this.target.y = ML.clamp(this.target.y, ML.WORLD.airTop + 10, ML.WORLD.airBottom - 10);
         this.lasso = true;
@@ -169,7 +191,8 @@
         }
         if (score < candD) { candD = score; cand = b; }
       }
-      if (cand) {
+      /* Never START an orbit when dawn is urgent — lanterns first. */
+      if (cand && !dawnUrgent) {
         this.state = "orbit";
         this.targetBat = cand;
         this.orbitTime = 0;

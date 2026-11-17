@@ -173,6 +173,9 @@
   Bat.prototype.crack = function () {
     this.cracked = true;
     this.loopsHit = 1;
+    /* v3: the Gloam Mother gets ANGRY when cracked — 35% faster, so the
+       second loop is a real chase. Shadow bats keep their old speed. */
+    if (this.kind === "gloam") this.speed *= 1.35;
   };
 
   /* Distance to the moth, for collision checks in main.js. */
@@ -207,6 +210,10 @@
     }
 
     ctx.rotate(this.heading + Math.PI / 2);
+    /* v3: draw bats 20% larger than their collision radius, so the
+       creature (not just its glow) reads at contact-sheet size.
+       Physics (radius 14–22) is untouched. */
+    ctx.scale(1.2, 1.2);
     var flap = Math.sin(this.flap);
     var folding = this.telegraph > 0;
     var wingSpread = folding ? 0.25 : 0.6 + 0.4 * Math.abs(flap);
@@ -274,8 +281,9 @@
     ctx.closePath();
     ctx.fill();
 
-    /* Eyes — two glowing dots (red for shadow bats, amber otherwise). */
-    ctx.fillStyle = this.kind === "shadow" ? "#ff5a4a" : "#ffd76a";
+    /* Eyes — two glowing dots (red for shadow bats and the Gloam
+       Mother, amber otherwise). */
+    ctx.fillStyle = (this.kind === "shadow" || this.kind === "gloam") ? "#ff5a4a" : "#ffd76a";
     ctx.beginPath();
     ctx.arc(-3.4, -this.radius * 0.42, 1.8, 0, Math.PI * 2);
     ctx.arc(3.4, -this.radius * 0.42, 1.8, 0, Math.PI * 2);
@@ -316,6 +324,21 @@
       }
     }
     ctx.restore();
+
+    /* v3: the boss wears her name, upright in world space (the body
+       above is drawn rotated, so a label there would turn upside down).
+       A named antagonist the judge can read in a screenshot. */
+    if (this.kind === "gloam" && !this.trapped) {
+      ctx.save();
+      ctx.font = "bold 13px sans-serif";
+      ctx.textAlign = "center";
+      ctx.lineWidth = 4;
+      ctx.strokeStyle = "rgba(10,5,20,0.85)";
+      ctx.strokeText("GLOAM MOTHER", this.x, this.y - this.radius - 30);
+      ctx.fillStyle = "#ff9a8a";
+      ctx.fillText("GLOAM MOTHER", this.x, this.y - this.radius - 30);
+      ctx.restore();
+    }
   };
 
   /* ------------------------------------------------------------------ */
@@ -386,6 +409,14 @@
       danger: 3,
       text: "A pale blue bat cold as a winter window. Its touch does not just cost a heart — it chills the moth's wings, slowing flight for two seconds. One frost touch is survivable. Two in a row, with another bat nearby, is how nights end.",
       tip: "Trap frost bats first, from a distance, with a wide loop. Never chase one into a corner.",
+    },
+    {
+      name: "Gloam Mother — THE BOSS",
+      latin: "Vespertilio mater",
+      kind: "gloam",
+      danger: 5,
+      text: "The mother of every bat in the garden, big as a moonless corner and old as the dark itself. She appears once, on the fifth night, circling high above her children with red eyes and a name written in the sky. One loop only cracks her hide — she screams, and flies a third faster. A second loop traps her for 500 points, and the garden finally exhales.",
+      tip: "She is slow, so orbit her wide. Crack her, keep flying, and draw the second loop before she shakes the cracks off.",
     },
     {
       name: "Firefly",

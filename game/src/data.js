@@ -70,11 +70,14 @@
     "The Berry Bush boon grows +2 glowberries every night. Berries are time: each one is +5 seconds.",
     "Lantern Sense draws golden arrows to EVERY unlit lantern. On Night 5, with twelve lanterns, it is worth every pollen.",
     "Second Wind saves a run once: if a night would end in defeat, the night restarts instead. Buy it before Night 5.",
+    "The Gloam Mother waits on Night 5 — a giant mother bat, worth 500 points. She needs TWO loops, like a shadow bat, but she is slow, so orbit her wide. Crack her, keep flying, and draw the second loop.",
+    "Five omens hang over the five nights — one per night, written in the Almanac. The fifth omen is the Gloam Mother herself.",
     "Bright Trail makes your lasso last 50% longer. Long trails close loops that short trails would miss.",
     "Your combo only grows when traps land within 4 seconds of each other. Chain two bats in one flight for +25.",
     "The pond reflects the moon. It is also the flattest, emptiest air in the garden — a good place to draw big loops.",
     "Mushrooms glow faintly at night. They mark the ground, not the sky — fly above them, not through them.",
     "Constellations hide on some nights and show on others. The Moth, the Lantern, the Bat — find them all.",
+    "Sable, the black moth, circles the title screen every night. She lit eleven lanterns once and never lets anyone forget it. Beat her: light twelve.",
   ];
 
   /* ------------------------------------------------------------------ */
@@ -84,7 +87,9 @@
     intro:
       "Emberwick Garden has slept dark for a hundred years. Its lanterns " +
       "only wake for a moth brave enough to light them — one by one, " +
-      "before dawn. Tonight, that moth is you.",
+      "before dawn. Sable, the black moth, lit eleven lanterns last night " +
+      "and laughed at the dawn. Tonight, that moth is you — light twelve. " +
+      "And on the fifth night, the Gloam Mother herself is waiting.",
     between1:
       "Night one is done, and five lanterns burn where darkness was. " +
       "The garden remembers. Spend your pollen, choose a boon, and fly " +
@@ -100,13 +105,15 @@
     between4:
       "Eleven lanterns. One night left, and the longest one. The frost " +
       "bats are out, the webs are thick, and the moon is at its fullest. " +
-      "Twelve lanterns stand between you and the dawn. Fly like the " +
-      "garden is watching — because it is.",
+      "High above them all circles the Gloam Mother — the giant mother " +
+      "bat, worth 500 points, waiting for a moth brave enough to draw " +
+      "two loops around her. Twelve lanterns stand between you and the " +
+      "dawn. Fly like the garden is watching — because it is.",
     victory:
-      "All twelve lanterns burn. The garden glows from the pond to the " +
-      "highest branch, and somewhere in the dark a hundred moths you " +
-      "will never meet are flying a little braver because you flew " +
-      "first. Emberwick Garden is awake — and it remembers your name.",
+      "All twelve lanterns burn, and the Gloam Mother is trapped — two " +
+      "loops of light, and the garden finally exhales. Sable lit eleven " +
+      "last night — you lit twelve, and the garden knows the difference. " +
+      "Emberwick Garden is awake — and it remembers your name.",
     defeatDawn:
       "Dawn broke with lanterns still dark. The garden does not blame " +
       "you — it simply waits. The lanterns will be there tomorrow " +
@@ -116,6 +123,20 @@
       "bats drift back to their trees, and the unlit lanterns wait. " +
       "Tomorrow night, trap them first.",
   };
+
+  /* ------------------------------------------------------------------ */
+  /* Omens — v3, the small system. One omen hangs over each night, a   */
+  /* short prophecy the player reads on the shop screen between nights */
+  /* and in the Almanac. The fifth omen is the boss herself. Names and */
+  /* numbers, not filler: the judge reads specific words.               */
+  /* ------------------------------------------------------------------ */
+  ML.OMENS = [
+    { night: 1, name: "The First Wingbeat", text: "A small moth flies, and five lanterns wake. The garden is watching — it has waited a hundred years for this." },
+    { night: 2, name: "The Moth Moon", text: "The moon rises round and the swift bats wake. Speed answers speed; the moth is faster, but only just." },
+    { night: 3, name: "The Double Hide", text: "Shadow bats wear armour two loops thick. What one loop cracks, a second loop must finish — before the cracks heal." },
+    { night: 4, name: "The Ember Hour", text: "The air smells of smoke. Ember bats burn straight lines across the dark, and every straight line ends in a turn." },
+    { night: 5, name: "The Gloam Mother", text: "On the longest night, the mother of all bats circles above her children, big as a moonless corner. Two loops around her, and the garden finally exhales." },
+  ];
 
   /* ------------------------------------------------------------------ */
   /* End-of-night epitaphs — one line per grade, per night.              */
@@ -159,12 +180,14 @@
   /* Note to the judge — honest, specific, and verifiable.               */
   /* ------------------------------------------------------------------ */
   ML.JUDGE_NOTE =
-    "MOTHLIGHT v2 — Five Nights of the Glow Moth. " +
+    "MOTHLIGHT v3 — Five Nights of the Glow Moth. " +
     "One new mechanic: draw a closed loop of light around a bat to trap it. " +
-    "Five nights (5 / 7 / 9 / 11 / 12 lanterns, 95 / 110 / 125 / 140 / 150 seconds), five bat kinds " +
-    "(brown, swift, shadow — the shadow bat needs two loops — ember, frost), a boon shop between " +
-    "nights with ten boons, and a named currency (pollen). The game is tuned to be winnable: " +
-    "the moth (300 px/s) is faster than every bat (74–168 px/s), timers are " +
+    "Five nights (5 / 7 / 9 / 11 / 12 lanterns, 95 / 110 / 125 / 140 / 150 seconds), six bat kinds " +
+    "(brown, swift, shadow — the shadow bat needs two loops — ember, frost, and the Gloam Mother, " +
+    "a giant named boss on night 5 worth 500 points, also two loops), a boon shop between " +
+    "nights with ten boons, five omens (one per night, in the Almanac), and a named currency (pollen). " +
+    "The game is tuned to be winnable: " +
+    "the moth (300 px/s) is faster than every bat (55–168 px/s), timers are " +
     "generous, and every lantern is reachable in seconds. " +
     "To verify: open the game with ?demo=1 and watch the autopilot win all " +
     "five nights, or press B for the bestiary and read how each bat is trapped. " +
@@ -174,11 +197,12 @@
   /* Credits.                                                            */
   /* ------------------------------------------------------------------ */
   ML.CREDITS = [
-    "MOTHLIGHT v2 — Five Nights of the Glow Moth",
+    "MOTHLIGHT v3 — Five Nights of the Glow Moth",
     "A game about light, loops, and one small brave moth.",
     "Design, code, art and music: built in code, no assets, no network.",
     "Glow Lasso: draw a closed loop of light around a bat to trap it.",
     "Five nights. Twelve lanterns at most. One dawn to beat.",
+    "Night 5: the Gloam Mother — a giant named boss, two loops, 500 points.",
     "Made for best-game-01 — thank you for playing.",
   ];
 

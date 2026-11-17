@@ -19,9 +19,10 @@
      adds content without adding risk.
 
    Contents:
-   - MOTH_SPECIES: eight moths, each with a wingspan, a glow colour, a
+   - MOTH_SPECIES: nine moths, each with a wingspan, a glow colour, a
      habitat in the garden, and a habit. The player's moth is the
-     Glow Moth (Lampyris noctis); the other seven are its neighbours.
+     Glow Moth (Lampyris noctis); the other eight are its neighbours —
+     including Sable, the black rival moth, who lit eleven lanterns once.
    - GARDEN_HISTORY: ten dated entries, from the planting of the first
      lantern tree (1897) to tonight.
    - CONSTELLATION_STORIES: longer myths for the eight constellations
@@ -110,6 +111,15 @@
       habitat: "The beehives at the garden's edge.",
       habit: "Wears a skull on its back and squeaks like a mouse when handled. The bees let it into their hives because it smells like them. The bats leave it alone because of the skull. It is, by every measure, a moth that has figured things out.",
       speed: "Strong and direct. It flies like it has somewhere to be.",
+    },
+    {
+      name: "Sable Moth — the rival",
+      latin: "Lampyris atra",
+      wingspan: "58 mm",
+      glow: "violet, at the edges",
+      habitat: "The top-right corner of the night, circling where the moon is brightest.",
+      habit: "The black moth. She lit eleven lanterns in a single night and has laughed at every moth since — she circles the title screen each evening, waiting for someone to light twelve. Her wings are dark as a moonless corner, her eyes are red, and she never lands. Beat her: light all twelve lanterns and the garden will remember your name, not hers.",
+      speed: "Slow, on purpose. She is not racing you. She is watching you.",
     },
   ];
 
